@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store
+.pnp.*
+.next
+out
+.vscode
+.git
+.gitignore
+.DS_Store
+dist
+coverage
+*.local
+.env
+.env.*

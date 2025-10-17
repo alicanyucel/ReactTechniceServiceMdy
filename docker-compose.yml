@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # In case you want to pass envs at build-time (optional)
+    # env_file:
+    #   - .env
