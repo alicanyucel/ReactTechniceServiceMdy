@@ -1,0 +1,14 @@
+/* App layout helpers */
+.wrapper {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  grid-template-rows: 56px 1fr 40px;
+  grid-template-areas:
+    "header header"
+    "sidebar content"
+    "footer footer";
+  min-height: 100vh;
+}
+
+.content-wrapper { padding: 16px; }
+.sidebar-collapsed + .content-wrapper { margin-left: 80px; }

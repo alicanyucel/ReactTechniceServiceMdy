@@ -1,0 +1,11 @@
+.main-header {
+  background: #343a40;
+  color: #fff;
+}
+.navbar { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.navbar-brand { display: flex; align-items: center; gap: 12px; }
+.sidebar-toggle { background: transparent; border: none; color: #fff; cursor: pointer; font-size: 18px; }
+.brand-text { font-weight: 600; }
+
+.navbar-nav { display: flex; align-items: center; gap: 12px; }
+.nav-item .nav-link { color: #fff; background: transparent; border: none; cursor: pointer; }
