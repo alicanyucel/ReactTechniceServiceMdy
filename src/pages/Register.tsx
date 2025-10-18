@@ -70,7 +70,7 @@ const Register: React.FC = () => {
           onFinish={onFinish} 
           autoComplete="off"
           initialValues={{
-            roles: ["User"],
+            roles: ["user"],
             updatedTime: new Date().toISOString(),
             updatedBy: "System",
             createdBy: "System",
@@ -125,10 +125,9 @@ const Register: React.FC = () => {
                   placeholder="Roller seçin"
                   size="large"
                   options={[
-                    { value: "User", label: "User" },
-                    { value: "Admin", label: "Admin" },
-                    { value: "Manager", label: "Manager" },
-                    { value: "Technician", label: "Technician" }
+                    { value: "user", label: "User" },
+                    { value: "admin", label: "Admin" },
+                    { value: "customer", label: "Customer" }
                   ]}
                 />
               </Form.Item>
