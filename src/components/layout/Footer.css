@@ -1,2 +1,16 @@
 .main-footer { background: #fff; color: #6c757d; border-top: 1px solid #e9ecef; }
-.footer-content { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.footer-content {
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center; /* yatayda ortala */
+	padding: 0 16px;
+	gap: 12px; /* sol-sağ metin arası boşluk */
+	text-align: center; /* metinleri ortala */
+	flex-wrap: wrap; /* dar ekranlarda alt satıra geçsin */
+}
+
+.footer-left, .footer-right {
+	display: inline-flex;
+	align-items: center;
+}
