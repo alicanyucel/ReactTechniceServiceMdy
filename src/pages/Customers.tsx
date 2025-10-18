@@ -479,6 +479,15 @@ const Customers: React.FC = () => {
     // Prefill form from record
     const ct = (record as any)?.customerType
     const customerTypeNum = typeof ct === 'number' ? ct : (ct && typeof ct.value === 'number' ? ct.value : undefined)
+    // Robust time extraction: support both cratedTime and createdTime; trim fractional seconds if present
+    const rawCreatedTime = (record as any).cratedTime ?? (record as any).createdTime
+    const createdTimeStr = rawCreatedTime != null ? String(rawCreatedTime) : undefined
+    const cleanedCreatedTime = createdTimeStr && createdTimeStr.includes('.') ? createdTimeStr.split('.')[0] : createdTimeStr
+    const rawUpdatedTime = (record as any).updatedTime
+    const updatedTimeStr = rawUpdatedTime != null ? String(rawUpdatedTime) : undefined
+    const cleanedUpdatedTime = updatedTimeStr && updatedTimeStr.includes('.') ? updatedTimeStr.split('.')[0] : updatedTimeStr
+    // Robust date mapping: support createadAt or createdAt
+    const rawCreateadAt = (record as any).createadAt ?? (record as any).createdAt
     const formVals: any = {
       id: record.id,
       name: record.name,
@@ -497,9 +506,9 @@ const Customers: React.FC = () => {
       updatedBy: (record as any).updatedBy,
       createdBy: (record as any).createdBy,
       // For UI we keep 'cratedTime' field name; map to createdTime at submit
-      cratedTime: (record as any).cratedTime ? dayjs((record as any).cratedTime, 'HH:mm:ss') : undefined,
-      updatedTime: (record as any).updatedTime ? dayjs((record as any).updatedTime, 'HH:mm:ss') : undefined,
-      createadAt: (record as any).createadAt ? dayjs((record as any).createadAt) : undefined,
+      cratedTime: cleanedCreatedTime ? dayjs(cleanedCreatedTime, 'HH:mm:ss') : undefined,
+      updatedTime: cleanedUpdatedTime ? dayjs(cleanedUpdatedTime, 'HH:mm:ss') : undefined,
+      createadAt: rawCreateadAt ? dayjs(rawCreateadAt) : undefined,
       updatedAt: (record as any).updatedAt ? dayjs((record as any).updatedAt) : undefined,
       isDeleted: (record as any).isDeleted,
     }
