@@ -51,7 +51,7 @@ const Customers: React.FC = () => {
       zipCode: '16010',
       country: 'Türkiye',
     },
-    customerType: 1,
+  customerType: 1,
     updatedTime: dayjs('13:25:00', 'HH:mm:ss'),
     updatedBy: 'admin',
     createdBy: 'ilayda.koc',
@@ -74,7 +74,7 @@ const Customers: React.FC = () => {
       zipCode: '16010',
       country: 'Türkiye',
     },
-    customerType: 1,
+  customerType: 1,
     updatedTime: '13:25:00',
     updatedBy: 'admin',
     createdBy: 'ilayda.koc',
@@ -396,9 +396,12 @@ const Customers: React.FC = () => {
         country: addr.country ?? '',
       }
       // Transform date/time fields to API expectations
+      const ctRaw = (values as any)?.customerType
+      const customerTypeNum = typeof ctRaw === 'number' ? ctRaw : (ctRaw != null && ctRaw !== '' ? Number(ctRaw) : 1)
       const payload: CreateCustomerPayload = {
         ...values,
         address: safeAddress,
+        customerType: Number.isNaN(customerTypeNum) ? 1 : customerTypeNum,
         // time-only fields as HH:mm:ss
         updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
         cratedTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
@@ -519,7 +522,7 @@ const Customers: React.FC = () => {
       >
         <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as 'form'|'json')} items={[
           { key: 'form', label: 'Örnek Doldur', children: (
-            <Form form={form} layout="vertical" preserve={false} initialValues={{ customerType: 0, isDeleted: false }}>
+            <Form form={form} layout="vertical" preserve={false} initialValues={{ customerType: 1, isDeleted: false }}>
           <Flex gap={12}>
             <Form.Item
               name="name"
@@ -592,8 +595,8 @@ const Customers: React.FC = () => {
             <Select
               placeholder="Seçiniz"
               options={[
-                { label: 'Bireysel', value: 0 },
-                { label: 'Kurumsal', value: 1 },
+                { label: 'Bireysel', value: 1 },
+                { label: 'Kurumsal', value: 2 },
               ]}
             />
           </Form.Item>
@@ -693,9 +696,12 @@ const Customers: React.FC = () => {
                     zipCode: addr.zipCode ?? '',
                     country: addr.country ?? '',
                   }
+                  const ctRaw = (values as any)?.customerType
+                  const customerTypeNum = typeof ctRaw === 'number' ? ctRaw : (ctRaw != null && ctRaw !== '' ? Number(ctRaw) : 1)
                   const payload: CreateCustomerPayload = {
                     ...values,
                     address: safeAddress,
+                    customerType: Number.isNaN(customerTypeNum) ? 1 : customerTypeNum,
                     updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
                     cratedTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
                     createadAt: values?.createadAt ? dayjs(values.createadAt).toISOString() : undefined,
