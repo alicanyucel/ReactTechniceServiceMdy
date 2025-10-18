@@ -615,6 +615,9 @@ const Customers: React.FC = () => {
           </Flex>
 
           <Flex gap={12}>
+            <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma saati zorunludur' }]}>
+              <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
+            </Form.Item>
             <Form.Item
               name="updatedTime"
               label="Güncelleme Saati"
@@ -644,9 +647,6 @@ const Customers: React.FC = () => {
                 }),
               ]}
             >
-              <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
-            </Form.Item>
-            <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma saati zorunludur' }]}>
               <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
             </Form.Item>
           </Flex>
