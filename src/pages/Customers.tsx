@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, message } from 'antd'
+import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, Tabs, message } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
@@ -13,7 +13,7 @@ const Customers: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [rawMode, setRawMode] = useState(false)
+  const [activeTab, setActiveTab] = useState<'form'|'json'>('form')
   const [rawJson, setRawJson] = useState<string>('')
 
   const load = useCallback(async () => {
@@ -83,6 +83,26 @@ const Customers: React.FC = () => {
     updatedAt: '2025-10-18T13:25:00.000Z',
     isDeleted: false,
   }, null, 2), [])
+
+  // Auto-fill both modes when modal opens
+  useEffect(() => {
+    if (open) {
+      setActiveTab('form')
+      ;(form as any).setFieldsValue(getExampleFormValues())
+      setRawJson(getExampleRawJson())
+    }
+  }, [open, form, getExampleFormValues, getExampleRawJson])
+
+  const handleClear = useCallback(() => {
+    if (activeTab === 'json') {
+      setRawJson('')
+    } else {
+      form.resetFields()
+      // Override initialValues so the form stays visually cleared
+      form.setFieldsValue({ customerType: undefined, isDeleted: false })
+    }
+  }, [activeTab, form])
+
 
   const humanize = (k: string) => {
     // Özel durumlar önce
@@ -344,8 +364,9 @@ const Customers: React.FC = () => {
 
   const onCreate = async () => {
     try {
+      const isRaw = activeTab === 'json'
       // Raw JSON mode: send as-is
-      if (rawMode) {
+      if (isRaw) {
         let body: any
         try {
           body = JSON.parse(rawJson || '{}')
@@ -460,42 +481,26 @@ const Customers: React.FC = () => {
       </Card>
 
       <Modal
-        title={
-          <Space>
-            Yeni Müşteri
-            <Button size="small" onClick={() => {
-              const ex = getExampleFormValues()
-              ;(form as any).setFieldsValue(ex)
-            }}>Örnek Doldur</Button>
-            <Switch size="small" checked={rawMode} onChange={setRawMode} />
-            <span style={{ fontSize: 12, color: '#999' }}>Gelişmiş: JSON</span>
-            {rawMode && (
-              <Button size="small" onClick={() => setRawJson(getExampleRawJson())}>Örnek JSON</Button>
-            )}
-          </Space>
-        }
+        title="Yeni Müşteri"
         open={open}
-        onOk={onCreate}
-        onCancel={() => setOpen(false)}
-        confirmLoading={loading}
-        okText="Kaydet"
-        cancelText="İptal"
+        afterOpenChange={(vis) => {
+          if (vis) {
+            setActiveTab('form')
+            // Apply examples to both modes to ensure immediate visibility
+            ;(form as any).setFieldsValue(getExampleFormValues())
+            setRawJson(getExampleRawJson())
+          }
+        }}
+        footer={[
+          <Button key="clear" onClick={handleClear} disabled={loading} style={{ marginRight: 'auto' }}>Temizle</Button>,
+          <Button key="cancel" onClick={() => setOpen(false)} disabled={loading}>İptal</Button>,
+          <Button key="save" type="primary" onClick={onCreate} loading={loading}>Kaydet</Button>,
+        ]}
         destroyOnClose
       >
-        {rawMode && (
-          <div style={{ marginBottom: 12 }}>
-            <Input.TextArea
-              value={rawJson}
-              onChange={(e) => setRawJson(e.target.value)}
-              autoSize={{ minRows: 8 }}
-              placeholder={"Swagger'da çalışan JSON'ı buraya yapıştırın"}
-            />
-            <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
-              Bu modda form yok sayılır ve JSON doğrudan API'ye gönderilir.
-            </div>
-          </div>
-        )}
-        <Form form={form} layout="vertical" preserve={false} style={{ display: rawMode ? 'none' : 'block' }} initialValues={{ customerType: 0, isDeleted: false }}>
+        <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as 'form'|'json')} items={[
+          { key: 'form', label: 'Örnek Doldur', children: (
+            <Form form={form} layout="vertical" preserve={false} initialValues={{ customerType: 0, isDeleted: false }}>
           <Flex gap={12}>
             <Form.Item
               name="name"
@@ -651,7 +656,22 @@ const Customers: React.FC = () => {
               <DatePicker showTime style={{ width: '100%' }} />
             </Form.Item>
           </Flex>
-        </Form>
+            </Form>
+          )},
+          { key: 'json', label: 'Örnek JSON', children: (
+            <div>
+              <Input.TextArea
+                value={rawJson}
+                onChange={(e) => setRawJson(e.target.value)}
+                autoSize={{ minRows: 12 }}
+                placeholder={"Swagger'da çalışan JSON'ı buraya yapıştırın"}
+              />
+              <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+                Bu sekmede form yok sayılır ve JSON doğrudan API'ye gönderilir.
+              </div>
+            </div>
+          )}
+        ]} />
       </Modal>
 
       <Modal
