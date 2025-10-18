@@ -482,7 +482,7 @@ const Customers: React.FC = () => {
     columns,
     scroll: { x: 'max-content' },
     pagination: {
-      pageSize: 10,
+      pageSize: 16,
       showSizeChanger: true,
       position: ['bottomCenter'],
     },
