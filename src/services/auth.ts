@@ -16,13 +16,13 @@ export type RegisterPayload = {
   email: string
   password: string
   roles: string[]
-  updatedTime?: string
-  updatedBy?: string
-  createdBy?: string
-  cratedTime?: string
-  createadAt?: string
-  updatedAt?: string
-  isDeleted?: boolean
+  updatedTime: string
+  updatedBy: string
+  createdBy: string
+  cratedTime: string
+  createadAt: string
+  updatedAt: string
+  isDeleted: boolean
 }
 
 export type LoginResponse = Record<string, unknown>
@@ -93,6 +93,11 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
 export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
   const url = `https://teknikservisapi.mudbey.com.tr:7054/api/Users/CreateUser`
+  
+  console.log('Register işlemi başlatılıyor...')
+  console.log('URL:', url)
+  console.log('Gönderilen veri:', JSON.stringify(payload, null, 2))
+  
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -101,8 +106,12 @@ export async function register(payload: RegisterPayload): Promise<RegisterRespon
     body: JSON.stringify(payload),
   })
 
+  console.log('Response status:', res.status)
+  console.log('Response headers:', res.headers)
+
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+    console.log('Hata detayı:', text)
     throw new Error(text || `Kayıt başarısız (HTTP ${res.status})`)
   }
 
@@ -110,10 +119,13 @@ export async function register(payload: RegisterPayload): Promise<RegisterRespon
   const rawText = await res.clone().text().catch(() => '')
   try {
     data = rawText ? JSON.parse(rawText) : {}
+    console.log('API yanıtı:', data)
   } catch {
     data = {}
+    console.log('API yanıtı JSON değil:', rawText)
   }
 
+  console.log('Register işlemi tamamlandı!')
   return data
 }
 
