@@ -71,7 +71,7 @@ const Customers: React.FC = () => {
     return Array.from(keys)
   }
 
-  const preferredOrder = ['id', 'name', 'surname', 'phoneNumber', 'email', 'address.city', 'customerType.value', 'customerType.name', 'createdAt', 'updatedAt']
+  const preferredOrder = ['id', 'name', 'surname', 'phoneNumber', 'email', 'address.city', 'customerType.name', 'createdAt', 'updatedAt']
 
   const DEFAULT_SCHEMA: string[] = [
     'name',
@@ -85,7 +85,6 @@ const Customers: React.FC = () => {
     'address.zipCode',
     'address.country',
     'customerType.name',
-    'customerType.value',
     'updatedTime',
     'createdTime',
     'updatedBy',
@@ -97,7 +96,9 @@ const Customers: React.FC = () => {
   ]
 
   const columns: ColumnsType<any> = useMemo(() => {
-  const keys = (data && data.length > 0) ? getAllKeys(data) : DEFAULT_SCHEMA
+  let keys = (data && data.length > 0) ? getAllKeys(data) : DEFAULT_SCHEMA
+  // customerType.value'yi hariç tut
+  keys = keys.filter(k => k !== 'customerType.value')
 
     // order: preferred keys first, then the rest
     const ordered = [
@@ -140,13 +141,18 @@ const Customers: React.FC = () => {
       if (key === 'address.neighborhood') title = 'Mahalle'
       if (key === 'address.zipCode') title = 'Posta Kodu'
       if (key === 'address.country') title = 'Ülke'
-      if (key === 'customerType.name') title = 'Tür'
-      if (key === 'customerType.value') title = 'Tür'
+      if (key === 'customerType.name') title = 'Müşteri Türü'
       if (key === 'phoneNumber') title = 'Telefon'
       if (key === 'email') title = 'E-posta'
-      if (key === 'createdAt') title = 'Oluş. Tarihi'
-      if (key === 'updatedAt') title = 'Güncelle. Tarihi'
+      if (key === 'createdAt') title = 'Oluşturma Tarihi'
+      if (key === 'updatedAt') title = 'Güncelleme Tarihi'
       if (key === 'id') title = 'ID'
+      if (key === 'isDeleted') title = 'Durum'
+      if (key === 'createdBy') title = 'Oluşturan'
+      if (key === 'updatedBy') title = 'Güncelleyen'
+      if (key === 'products') title = 'Ürünler'
+      if (key === 'updatedTime') title = 'Güncelleme Saati'
+      if (key === 'createdTime') title = 'Oluşturma Saati'
       const baseCol: any = {
         title,
         dataIndex: pathArr,
@@ -180,17 +186,6 @@ const Customers: React.FC = () => {
         baseCol.onFilter = (value: any, record: any) => String(getByPath(record, pathArr) ?? '').toLowerCase().includes(String(value).toLowerCase())
       }
       // CustomerType özel durum: API artık obje dönüyor { name, value }
-      if (key === 'customerType.value') {
-        // Unique değerlerden filtre seti oluştur
-        const values = Array.from(new Set(data.map(r => getByPath(r as any, ['customerType','value']))))
-          .filter(v => v !== undefined && v !== null)
-        baseCol.filters = values.map(v => ({ text: String(v), value: v }))
-        baseCol.onFilter = (value: any, record: any) => getByPath(record, ['customerType','value']) === value
-        baseCol.render = (_: any, record: any) => {
-          const name = getByPath(record, ['customerType','name'])
-          return <Tag color="blue">{name || '-'}</Tag>
-        }
-      }
       if (key === 'customerType.name') {
         baseCol.render = (_: any, record: Customer) => {
           const name = getByPath(record, ['customerType','name'])
