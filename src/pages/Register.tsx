@@ -19,11 +19,11 @@ const Register: React.FC = () => {
     confirmPassword: string
     roles: string[]
     updatedTime: any
-    updatedBy: string
-    createdBy: string
-    cratedTime: any
-    createadAt: any
-    updatedAt: any
+    updatedBy: string// burada datetimepicker olmaycak
+    createdBy: string // burada datetimepicker olmaycak
+    cratedTime: any // burada datetimepicker olacak
+    createadAt: any // burada datetimepicker olacak
+    updatedAt: any // burada datetimepicker olacak
     isDeleted: boolean
   }) => {
     if (values.password !== values.confirmPassword) {
