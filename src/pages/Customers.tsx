@@ -606,11 +606,11 @@ const Customers: React.FC = () => {
           </Form.Item>
 
           <Flex gap={12}>
-            <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }} rules={[{ required: true, message: 'Güncelleyen zorunludur' }]}> 
-              <Input placeholder="Güncelleyen kullanıcı" />
-            </Form.Item>
             <Form.Item name="createdBy" label="Oluşturan" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturan zorunludur' }]}> 
               <Input placeholder="Oluşturan kullanıcı" />
+            </Form.Item>
+            <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }} rules={[{ required: true, message: 'Güncelleyen zorunludur' }]}> 
+              <Input placeholder="Güncelleyen kullanıcı" />
             </Form.Item>
           </Flex>
 
