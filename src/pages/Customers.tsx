@@ -15,6 +15,12 @@ const Customers: React.FC = () => {
   const [deleting, setDeleting] = useState(false)
   const [activeTab, setActiveTab] = useState<'form'|'json'>('form')
   const [rawJson, setRawJson] = useState<string>('')
+  // Pagination state with persistence
+  const [pageSize, setPageSize] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('customers.pageSize'))
+    return saved && !Number.isNaN(saved) ? saved : 15
+  })
+  const [currentPage, setCurrentPage] = useState<number>(1)
   // Edit modal state
   const [editOpen, setEditOpen] = useState(false)
   const [editActiveTab, setEditActiveTab] = useState<'form'|'json'>('form')
@@ -639,9 +645,24 @@ const Customers: React.FC = () => {
     columns,
     scroll: { x: 'max-content' },
     pagination: {
-      pageSize: 15,
+      current: currentPage,
+      pageSize,
       showSizeChanger: true,
+      pageSizeOptions: [10, 15, 20, 30, 50, 100],
+      showQuickJumper: true,
       position: ['bottomCenter'],
+      onShowSizeChange: (_page, size) => {
+        setCurrentPage(1)
+        setPageSize(size)
+        localStorage.setItem('customers.pageSize', String(size))
+      },
+      onChange: (page, size) => {
+        setCurrentPage(page)
+        if (size && size !== pageSize) {
+          setPageSize(size)
+          localStorage.setItem('customers.pageSize', String(size))
+        }
+      },
     },
   }
 
