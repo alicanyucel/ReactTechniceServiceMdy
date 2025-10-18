@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, Tabs, message } from 'antd'
+import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, Tabs, message, notification } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
@@ -416,7 +416,26 @@ const Customers: React.FC = () => {
       form.resetFields()
     } catch (e: any) {
       if (e?.errorFields) return // form validasyon hatası
-      message.error(e?.message || 'Müşteri oluşturulamadı')
+      // Eğer servis ProblemDetails/ModelState detayları verdiyse göster
+      const lines: string[] = Array.isArray(e?.errors) ? e.errors : []
+      if (lines.length) {
+        notification.error({
+          message: 'Form doğrulama hatası',
+          description: (
+            <div>
+              <div style={{ marginBottom: 8 }}>{e?.message || 'Geçersiz istek (400). Lütfen alanları kontrol edin.'}</div>
+              <ul style={{ paddingLeft: 18, margin: 0 }}>
+                {lines.slice(0, 6).map((l, i) => (<li key={i}>{l}</li>))}
+                {lines.length > 6 && <li>… {lines.length - 6} daha</li>}
+              </ul>
+            </div>
+          ),
+          placement: 'topRight',
+          duration: 6,
+        })
+      } else {
+        message.error(e?.message || 'Müşteri oluşturulamadı')
+      }
     } finally {
       setLoading(false)
     }
@@ -569,7 +588,7 @@ const Customers: React.FC = () => {
             <Input placeholder="Türkiye" />
           </Form.Item>
 
-          <Form.Item name="customerType" label="Müşteri Türü">
+          <Form.Item name="customerType" label="Müşteri Türü" rules={[{ required: true, message: 'Müşteri türü zorunludur' }]}>
             <Select
               placeholder="Seçiniz"
               options={[
@@ -599,6 +618,7 @@ const Customers: React.FC = () => {
               style={{ flex: 1 }}
               dependencies={["cratedTime", "createadAt", "updatedAt"]}
               rules={[
+                { required: true, message: 'Güncelleme saati zorunludur' },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     const start = getFieldValue('cratedTime')
@@ -623,7 +643,7 @@ const Customers: React.FC = () => {
             >
               <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
             </Form.Item>
-            <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }}>
+            <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma saati zorunludur' }]}>
               <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
             </Form.Item>
           </Flex>
@@ -660,11 +680,36 @@ const Customers: React.FC = () => {
           )},
           { key: 'json', label: 'Örnek JSON', children: (
             <div>
+              <Space style={{ marginBottom: 8 }}>
+                <Button size="small" onClick={() => setRawJson(getExampleRawJson())}>Örnek JSON</Button>
+                <Button size="small" onClick={() => {
+                  const values = form.getFieldsValue(true)
+                  const addr = values?.address || {}
+                  const safeAddress = {
+                    addressLine: addr.addressLine ?? '',
+                    city: addr.city ?? '',
+                    neighborhood: addr.neighborhood ?? '',
+                    district: addr.district ?? '',
+                    zipCode: addr.zipCode ?? '',
+                    country: addr.country ?? '',
+                  }
+                  const payload: CreateCustomerPayload = {
+                    ...values,
+                    address: safeAddress,
+                    updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
+                    cratedTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
+                    createadAt: values?.createadAt ? dayjs(values.createadAt).toISOString() : undefined,
+                    updatedAt: values?.updatedAt ? dayjs(values.updatedAt).toISOString() : undefined,
+                    isDeleted: typeof values.isDeleted === 'boolean' ? values.isDeleted : false,
+                  }
+                  setRawJson(JSON.stringify(payload, null, 2))
+                }}>Formdan JSON</Button>
+              </Space>
               <Input.TextArea
                 value={rawJson}
                 onChange={(e) => setRawJson(e.target.value)}
                 autoSize={{ minRows: 12 }}
-                placeholder={"Swagger'da çalışan JSON'ı buraya yapıştırın"}
+                placeholder={"Swagger'da çalışan JSON'ı buraya yapıştırın veya 'Formdan JSON' ile üretin"}
               />
               <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
                 Bu sekmede form yok sayılır ve JSON doğrudan API'ye gönderilir.
