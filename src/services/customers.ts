@@ -90,3 +90,24 @@ export async function fetchCustomers(): Promise<Customer[]> {
 
   return pickArray(json) as Customer[]
 }
+
+export async function deleteCustomer(id: string): Promise<void> {
+  const url = 'https://teknikservisapi.mudbey.com.tr:7054/api/Customers/CustomerDelete'
+  const token = getAuthToken()
+  // eslint-disable-next-line no-console
+  console.debug('[deleteCustomer] POST', url, 'id?', !!id)
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ id }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    // eslint-disable-next-line no-console
+    console.error('[deleteCustomer] HTTP Error', res.status, text)
+    throw new Error(text || `Müşteri silme başarısız (HTTP ${res.status})`)
+  }
+}

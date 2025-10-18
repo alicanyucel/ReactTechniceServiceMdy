@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Flex, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Card, Flex, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import { createCustomer, fetchCustomers } from '../services/customers'
+import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
 import dayjs from 'dayjs'
 
@@ -10,6 +10,9 @@ const Customers: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [form] = Form.useForm<CreateCustomerPayload>()
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -218,15 +221,7 @@ const Customers: React.FC = () => {
       render: (_: any, record: Customer) => (
         <Space>
           <Button size="small" onClick={() => onEdit(record)}>Güncelle</Button>
-          <Popconfirm
-            title="Sil"
-            description="Bu müşteri silinecek, emin misiniz?"
-            onConfirm={() => onDelete(String(record.id))}
-            okText="Evet"
-            cancelText="Hayır"
-          >
-            <Button size="small" danger>Sil</Button>
-          </Popconfirm>
+          <Button size="small" danger onClick={() => onDelete(String(record.id))}>Sil</Button>
         </Space>
       ),
     })
@@ -253,7 +248,24 @@ const Customers: React.FC = () => {
   }
 
   const onDelete = (id: string) => {
-    message.info(`Müşteri silme özelliği yakında gelecek (ID: ${id})`)
+    setDeleteId(id)
+    setDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    try {
+      await deleteCustomer(deleteId)
+      message.success('✓ Müşteri başarıyla silindi!')
+      setDeleteModalOpen(false)
+      setDeleteId(null)
+      await load()
+    } catch (err: any) {
+      message.error(err.message || 'Müşteri silinirken hata oluştu')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const onEdit = (_record: Customer) => {
@@ -352,6 +364,29 @@ const Customers: React.FC = () => {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Müşteri Sil"
+        open={deleteModalOpen}
+        onCancel={() => setDeleteModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setDeleteModalOpen(false)}>
+            İptal
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            loading={deleting}
+            onClick={handleConfirmDelete}
+          >
+            Evet, Sil
+          </Button>,
+        ]}
+      >
+        <p>Bu müşteri kaydını silmek istediğinize emin misiniz?</p>
+        <p style={{ color: '#999', fontSize: '12px' }}>Bu işlem geri alınamaz.</p>
       </Modal>
     </Flex>
   )
