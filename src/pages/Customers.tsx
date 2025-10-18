@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Flex, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, message } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
@@ -296,13 +296,23 @@ const Customers: React.FC = () => {
   const onCreate = async () => {
     try {
       const values = await form.validateFields()
+      // Transform date/time fields to API expectations
+      const payload: CreateCustomerPayload = {
+        ...values,
+        // time-only fields as HH:mm:ss
+        updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
+        cratedTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
+        // date-time fields as ISO
+        createadAt: values?.createadAt ? dayjs(values.createadAt).toISOString() : undefined,
+        updatedAt: values?.updatedAt ? dayjs(values.updatedAt).toISOString() : undefined,
+      }
       setLoading(true)
-      await createCustomer(values)
+      await createCustomer(payload)
       message.success('Müşteri oluşturuldu')
+      // Sunucudan taze liste çek
+      await load()
       setOpen(false)
       form.resetFields()
-      // Not: Gerçek API'den liste alma olduğunda list tekrar yüklenecek
-      setData(prev => [{ ...values, id: Date.now() }, ...prev])
     } catch (e: any) {
       if (e?.errorFields) return // form validasyon hatası
       message.error(e?.message || 'Müşteri oluşturulamadı')
@@ -381,16 +391,43 @@ const Customers: React.FC = () => {
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Flex gap={12}>
-            <Form.Item name="name" label="Ad" rules={[{ required: true, message: 'Zorunlu alan' }]} style={{ flex: 1 }}>
+            <Form.Item
+              name="name"
+              label="Ad"
+              rules={[
+                { required: true, message: 'Ad zorunludur' },
+                { min: 2, message: 'Ad en az 2 karakter olmalı' },
+              ]}
+              style={{ flex: 1 }}
+            >
               <Input placeholder="Ad" />
             </Form.Item>
-            <Form.Item name="surname" label="Soyad" rules={[{ required: true, message: 'Zorunlu alan' }]} style={{ flex: 1 }}>
+            <Form.Item
+              name="surname"
+              label="Soyad"
+              rules={[
+                { required: true, message: 'Soyad zorunludur' },
+                { min: 2, message: 'Soyad en az 2 karakter olmalı' },
+              ]}
+              style={{ flex: 1 }}
+            >
               <Input placeholder="Soyad" />
             </Form.Item>
           </Flex>
 
           <Flex gap={12}>
-            <Form.Item name="phoneNumber" label="Telefon" style={{ flex: 1 }}>
+            <Form.Item
+              name="phoneNumber"
+              label="Telefon"
+              style={{ flex: 1 }}
+              rules={[
+                { required: true, message: 'Telefon zorunludur' },
+                {
+                  pattern: /^(\+90\s?)?0?5\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/,
+                  message: 'Geçerli bir GSM numarası girin (örn. 05xx xxx xx xx)'
+                }
+              ]}
+            >
               <Input placeholder="05xx xxx xx xx" />
             </Form.Item>
             <Form.Item name="email" label="E-posta" rules={[{ type: 'email', message: 'Geçerli e-posta girin' }]} style={{ flex: 1 }}>
@@ -417,6 +454,9 @@ const Customers: React.FC = () => {
               <Input placeholder="00000" />
             </Form.Item>
           </Flex>
+          <Form.Item name={["address", "country"]} label="Ülke">
+            <Input placeholder="Türkiye" />
+          </Form.Item>
 
           <Form.Item name="customerType" label="Müşteri Türü">
             <Select
@@ -427,6 +467,33 @@ const Customers: React.FC = () => {
               ]}
             />
           </Form.Item>
+
+          <Flex gap={12}>
+            <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }}>
+              <Input placeholder="Güncelleyen kullanıcı" />
+            </Form.Item>
+            <Form.Item name="createdBy" label="Oluşturan" style={{ flex: 1 }}>
+              <Input placeholder="Oluşturan kullanıcı" />
+            </Form.Item>
+          </Flex>
+
+          <Flex gap={12}>
+            <Form.Item name="updatedTime" label="Güncelleme Saati" style={{ flex: 1 }}>
+              <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
+            </Form.Item>
+            <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }}>
+              <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
+            </Form.Item>
+          </Flex>
+
+          <Flex gap={12}>
+            <Form.Item name="createadAt" label="Oluşturma Tarihi" style={{ flex: 1 }}>
+              <DatePicker showTime style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item name="updatedAt" label="Güncelleme Tarihi" style={{ flex: 1 }}>
+              <DatePicker showTime style={{ width: '100%' }} />
+            </Form.Item>
+          </Flex>
         </Form>
       </Modal>
 

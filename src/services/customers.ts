@@ -1,9 +1,10 @@
-import { API_BASE } from './auth'
+// API_BASE intentionally not used here because absolute URL is required for this endpoint
 import { CreateCustomerPayload, Customer } from '../types/customer'
 import { getAuthToken } from './auth'
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
-  const url = `${API_BASE}/api/Customers/CreateCustomer`
+  // Use absolute URL to ensure it works regardless of dev proxy settings
+  const url = `https://teknikservisapi.mudbey.com.tr:7054/api/Customers/CreateCustomer`
   const token = getAuthToken()
   const res = await fetch(url, {
     method: 'POST',
@@ -13,11 +14,43 @@ export async function createCustomer(payload: CreateCustomerPayload): Promise<Cu
     },
     body: JSON.stringify(payload),
   })
+  const text = await res.text().catch(() => '')
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(text || `Müşteri oluşturma başarısız (HTTP ${res.status})`)
+    // Try parse error envelope
+    let userMsg = ''
+    try {
+      const j = text ? JSON.parse(text) : null
+      if (j) {
+        if (Array.isArray(j.errorMessages) && j.errorMessages.length > 0) {
+          userMsg = String(j.errorMessages[0])
+        } else if (typeof j.message === 'string' && j.message.trim()) {
+          userMsg = j.message
+        }
+      }
+    } catch {}
+    if (!userMsg) userMsg = `Müşteri oluşturma başarısız (HTTP ${res.status})`
+    const err: any = new Error(userMsg)
+    err.status = res.status
+    err.rawBody = text
+    throw err
   }
-  return res.json()
+  // Parse success response (may be plain object or envelope)
+  try {
+    const j = text ? JSON.parse(text) : {}
+    if (j && typeof j === 'object') {
+      if ('isSuccessful' in j) {
+        if (j.isSuccessful === false) {
+          const msgs = Array.isArray(j.errorMessages) ? j.errorMessages.join(', ') : (j.errorMessages || 'Bilinmeyen hata')
+          throw new Error(`Müşteri oluşturulamadı: ${msgs}`)
+        }
+        if ('data' in j && j.data) return j.data as Customer
+      }
+    }
+    return j as Customer
+  } catch {
+    // If not JSON, return minimal object
+    return {} as Customer
+  }
 }
 
 // Placeholder: API list endpoint belirtilmediği için örnek bir fetch simülasyonu yapılabilir.
