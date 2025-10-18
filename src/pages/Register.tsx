@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { LockOutlined, UserOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Card, Flex, Form, Input, Typography, message, Select, Switch, Row, Col } from 'antd'
+import { Button, Card, Flex, Form, Input, Typography, message, Select, Switch, Row, Col, DatePicker } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { register } from '../services/auth'
+import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
 
@@ -17,12 +18,12 @@ const Register: React.FC = () => {
     password: string
     confirmPassword: string
     roles: string[]
-    updatedTime: string
+    updatedTime: any
     updatedBy: string
     createdBy: string
-    cratedTime: string
-    createadAt: string
-    updatedAt: string
+    cratedTime: any
+    createadAt: any
+    updatedAt: any
     isDeleted: boolean
   }) => {
     if (values.password !== values.confirmPassword) {
@@ -38,12 +39,12 @@ const Register: React.FC = () => {
         email: values.email,
         password: values.password,
         roles: values.roles,
-        updatedTime: values.updatedTime,
+        updatedTime: values.updatedTime ? values.updatedTime.toISOString() : new Date().toISOString(),
         updatedBy: values.updatedBy,
         createdBy: values.createdBy,
-        cratedTime: values.cratedTime,
-        createadAt: values.createadAt,
-        updatedAt: values.updatedAt,
+        cratedTime: values.cratedTime ? values.cratedTime.toISOString() : new Date().toISOString(),
+        createadAt: values.createadAt ? values.createadAt.toISOString() : new Date().toISOString(),
+        updatedAt: values.updatedAt ? values.updatedAt.toISOString() : new Date().toISOString(),
         isDeleted: values.isDeleted
       })
       message.success('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...')
@@ -71,12 +72,12 @@ const Register: React.FC = () => {
           autoComplete="off"
           initialValues={{
             roles: ["user"],
-            updatedTime: new Date().toISOString(),
+            updatedTime: dayjs(),
             updatedBy: "System",
             createdBy: "System",
-            cratedTime: new Date().toISOString(),
-            createadAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            cratedTime: dayjs(),
+            createadAt: dayjs(),
+            updatedAt: dayjs(),
             isDeleted: false
           }}
         >
@@ -186,7 +187,13 @@ const Register: React.FC = () => {
                 name="updatedTime"
                 rules={[{ required: true, message: 'Güncelleme zamanı gerekli' }]}
               >
-                <Input placeholder="2025-10-18T08:57:06.606Z" size="large" />
+                <DatePicker 
+                  showTime 
+                  placeholder="Tarih ve saat seçin"
+                  size="large"
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD HH:mm:ss"
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -195,7 +202,13 @@ const Register: React.FC = () => {
                 name="cratedTime"
                 rules={[{ required: true, message: 'Oluşturma zamanı gerekli' }]}
               >
-                <Input placeholder="2025-10-18T08:57:06.606Z" size="large" />
+                <DatePicker 
+                  showTime 
+                  placeholder="Tarih ve saat seçin"
+                  size="large"
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD HH:mm:ss"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -207,7 +220,13 @@ const Register: React.FC = () => {
                 name="createadAt"
                 rules={[{ required: true, message: 'Oluşturulma tarihi gerekli' }]}
               >
-                <Input placeholder="2025-10-18T08:57:06.606Z" size="large" />
+                <DatePicker 
+                  showTime 
+                  placeholder="Tarih ve saat seçin"
+                  size="large"
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD HH:mm:ss"
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -216,7 +235,13 @@ const Register: React.FC = () => {
                 name="updatedAt"
                 rules={[{ required: true, message: 'Güncellenme tarihi gerekli' }]}
               >
-                <Input placeholder="2025-10-18T08:57:06.606Z" size="large" />
+                <DatePicker 
+                  showTime 
+                  placeholder="Tarih ve saat seçin"
+                  size="large"
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD HH:mm:ss"
+                />
               </Form.Item>
             </Col>
           </Row>
