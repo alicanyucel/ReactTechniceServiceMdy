@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, message } from 'antd'
+import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, message } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
@@ -13,6 +13,8 @@ const Customers: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [rawMode, setRawMode] = useState(false)
+  const [rawJson, setRawJson] = useState<string>('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -34,6 +36,53 @@ const Customers: React.FC = () => {
   useEffect(() => {
     load()
   }, [load])
+
+  // Example payload helpers for quick fill and JSON paste
+  const getExampleFormValues = useCallback(() => ({
+    name: 'İlayda',
+    surname: 'Koç',
+    phoneNumber: '+905316789012',
+    email: 'ilayda.koc@example.com',
+    address: {
+      addressLine: 'Yeşil Vadi Sitesi B Blok No:7',
+      city: 'Bursa',
+      neighborhood: 'Nilüfer',
+      district: 'Osmangazi',
+      zipCode: '16010',
+      country: 'Türkiye',
+    },
+    customerType: 1,
+    updatedTime: dayjs('13:25:00', 'HH:mm:ss'),
+    updatedBy: 'admin',
+    createdBy: 'ilayda.koc',
+    cratedTime: dayjs('08:50:00', 'HH:mm:ss'),
+    createadAt: dayjs('2025-10-18T08:50:00.000Z'),
+    updatedAt: dayjs('2025-10-18T13:25:00.000Z'),
+    isDeleted: false,
+  }), [])
+
+  const getExampleRawJson = useCallback(() => JSON.stringify({
+    name: 'İlayda',
+    surname: 'Koç',
+    phoneNumber: '+905316789012',
+    email: 'ilayda.koc@example.com',
+    address: {
+      addressLine: 'Yeşil Vadi Sitesi B Blok No:7',
+      city: 'Bursa',
+      neighborhood: 'Nilüfer',
+      district: 'Osmangazi',
+      zipCode: '16010',
+      country: 'Türkiye',
+    },
+    customerType: 1,
+    updatedTime: '13:25:00',
+    updatedBy: 'admin',
+    createdBy: 'ilayda.koc',
+    cratedTime: '08:50:00',
+    createadAt: '2025-10-18T08:50:00.000Z',
+    updatedAt: '2025-10-18T13:25:00.000Z',
+    isDeleted: false,
+  }, null, 2), [])
 
   const humanize = (k: string) => {
     // Özel durumlar önce
@@ -295,16 +344,47 @@ const Customers: React.FC = () => {
 
   const onCreate = async () => {
     try {
+      // Raw JSON mode: send as-is
+      if (rawMode) {
+        let body: any
+        try {
+          body = JSON.parse(rawJson || '{}')
+        } catch (err) {
+          message.error('Geçersiz JSON. Lütfen kontrol edin.')
+          return
+        }
+        setLoading(true)
+        await createCustomer(body as any)
+        message.success('Müşteri oluşturuldu')
+        await load()
+        setOpen(false)
+        form.resetFields()
+        setRawJson('')
+        return
+      }
+
       const values = await form.validateFields()
+      // Normalize address to always include all fields
+      const addr = values?.address || {}
+      const safeAddress = {
+        addressLine: addr.addressLine ?? '',
+        city: addr.city ?? '',
+        neighborhood: addr.neighborhood ?? '',
+        district: addr.district ?? '',
+        zipCode: addr.zipCode ?? '',
+        country: addr.country ?? '',
+      }
       // Transform date/time fields to API expectations
       const payload: CreateCustomerPayload = {
         ...values,
+        address: safeAddress,
         // time-only fields as HH:mm:ss
         updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
         cratedTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
         // date-time fields as ISO
         createadAt: values?.createadAt ? dayjs(values.createadAt).toISOString() : undefined,
         updatedAt: values?.updatedAt ? dayjs(values.updatedAt).toISOString() : undefined,
+        isDeleted: typeof values.isDeleted === 'boolean' ? values.isDeleted : false,
       }
       setLoading(true)
       await createCustomer(payload)
@@ -380,7 +460,20 @@ const Customers: React.FC = () => {
       </Card>
 
       <Modal
-        title="Yeni Müşteri"
+        title={
+          <Space>
+            Yeni Müşteri
+            <Button size="small" onClick={() => {
+              const ex = getExampleFormValues()
+              ;(form as any).setFieldsValue(ex)
+            }}>Örnek Doldur</Button>
+            <Switch size="small" checked={rawMode} onChange={setRawMode} />
+            <span style={{ fontSize: 12, color: '#999' }}>Gelişmiş: JSON</span>
+            {rawMode && (
+              <Button size="small" onClick={() => setRawJson(getExampleRawJson())}>Örnek JSON</Button>
+            )}
+          </Space>
+        }
         open={open}
         onOk={onCreate}
         onCancel={() => setOpen(false)}
@@ -389,7 +482,20 @@ const Customers: React.FC = () => {
         cancelText="İptal"
         destroyOnClose
       >
-        <Form form={form} layout="vertical" preserve={false}>
+        {rawMode && (
+          <div style={{ marginBottom: 12 }}>
+            <Input.TextArea
+              value={rawJson}
+              onChange={(e) => setRawJson(e.target.value)}
+              autoSize={{ minRows: 8 }}
+              placeholder={"Swagger'da çalışan JSON'ı buraya yapıştırın"}
+            />
+            <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
+              Bu modda form yok sayılır ve JSON doğrudan API'ye gönderilir.
+            </div>
+          </div>
+        )}
+        <Form form={form} layout="vertical" preserve={false} style={{ display: rawMode ? 'none' : 'block' }} initialValues={{ customerType: 0, isDeleted: false }}>
           <Flex gap={12}>
             <Form.Item
               name="name"
@@ -439,10 +545,10 @@ const Customers: React.FC = () => {
             <Input placeholder="Mahalle/Sokak/Cadde ..." />
           </Form.Item>
           <Flex gap={12}>
-            <Form.Item name={["address", "city"]} label="Şehir" style={{ flex: 1 }}>
+            <Form.Item name={["address", "city"]} label="Şehir" style={{ flex: 1 }} rules={[{ required: true, message: 'Şehir zorunludur' }]}> 
               <Input placeholder="Şehir" />
             </Form.Item>
-            <Form.Item name={["address", "district"]} label="İlçe" style={{ flex: 1 }}>
+            <Form.Item name={["address", "district"]} label="İlçe" style={{ flex: 1 }} rules={[{ required: true, message: 'İlçe zorunludur' }]}> 
               <Input placeholder="İlçe" />
             </Form.Item>
           </Flex>
@@ -454,7 +560,7 @@ const Customers: React.FC = () => {
               <Input placeholder="00000" />
             </Form.Item>
           </Flex>
-          <Form.Item name={["address", "country"]} label="Ülke">
+          <Form.Item name={["address", "country"]} label="Ülke" rules={[{ required: true, message: 'Ülke zorunludur' }]}>
             <Input placeholder="Türkiye" />
           </Form.Item>
 
@@ -468,17 +574,48 @@ const Customers: React.FC = () => {
             />
           </Form.Item>
 
+          <Form.Item name="isDeleted" label="Silindi" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+
           <Flex gap={12}>
-            <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }}>
+            <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }} rules={[{ required: true, message: 'Güncelleyen zorunludur' }]}> 
               <Input placeholder="Güncelleyen kullanıcı" />
             </Form.Item>
-            <Form.Item name="createdBy" label="Oluşturan" style={{ flex: 1 }}>
+            <Form.Item name="createdBy" label="Oluşturan" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturan zorunludur' }]}> 
               <Input placeholder="Oluşturan kullanıcı" />
             </Form.Item>
           </Flex>
 
           <Flex gap={12}>
-            <Form.Item name="updatedTime" label="Güncelleme Saati" style={{ flex: 1 }}>
+            <Form.Item
+              name="updatedTime"
+              label="Güncelleme Saati"
+              style={{ flex: 1 }}
+              dependencies={["cratedTime", "createadAt", "updatedAt"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const start = getFieldValue('cratedTime')
+                    if (!value || !start) return Promise.resolve()
+                    const createdDate = getFieldValue('createadAt')
+                    const updatedDate = getFieldValue('updatedAt')
+                    const sameDay = createdDate && updatedDate
+                      ? dayjs(updatedDate).isSame(dayjs(createdDate), 'day')
+                      : true
+                    if (!sameDay) return Promise.resolve()
+                    const s = dayjs(start)
+                    const v = dayjs(value)
+                    const sSec = s.hour() * 3600 + s.minute() * 60 + s.second()
+                    const vSec = v.hour() * 3600 + v.minute() * 60 + v.second()
+                    if (vSec < sSec) {
+                      return Promise.reject(new Error('Güncelleme saati, aynı gün için oluşturma saatinden önce olamaz'))
+                    }
+                    return Promise.resolve()
+                  },
+                }),
+              ]}
+            >
               <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
             </Form.Item>
             <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }}>
@@ -487,10 +624,30 @@ const Customers: React.FC = () => {
           </Flex>
 
           <Flex gap={12}>
-            <Form.Item name="createadAt" label="Oluşturma Tarihi" style={{ flex: 1 }}>
+            <Form.Item name="createadAt" label="Oluşturma Tarihi" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma tarihi zorunludur' }]}> 
               <DatePicker showTime style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="updatedAt" label="Güncelleme Tarihi" style={{ flex: 1 }}>
+            <Form.Item
+              name="updatedAt"
+              label="Güncelleme Tarihi"
+              style={{ flex: 1 }}
+              dependencies={["createadAt"]}
+              rules={[
+                { required: true, message: 'Güncelleme tarihi zorunludur' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const start = getFieldValue('createadAt')
+                    if (!value || !start) return Promise.resolve()
+                    const s = dayjs(start)
+                    const v = dayjs(value)
+                    if (v.isBefore(s)) {
+                      return Promise.reject(new Error('Güncelleme tarihi, oluşturma tarihinden önce olamaz'))
+                    }
+                    return Promise.resolve()
+                  },
+                }),
+              ]}
+            >
               <DatePicker showTime style={{ width: '100%' }} />
             </Form.Item>
           </Flex>

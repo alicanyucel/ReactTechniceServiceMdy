@@ -163,3 +163,34 @@ export function logout() {
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
+
+export function getUserRoles(): string[] {
+  const token = getAuthToken()
+  if (!token) return []
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return []
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    // Common claim keys used across APIs
+    const candidates = [
+      'roles', 'role', 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+    ]
+    for (const key of candidates) {
+      const v = payload[key]
+      if (!v) continue
+      if (Array.isArray(v)) return v.map(String)
+      if (typeof v === 'string') {
+        // Split comma-separated roles if needed
+        return v.split(',').map(s => s.trim()).filter(Boolean)
+      }
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export function hasAnyRole(expected: string[]): boolean {
+  const roles = getUserRoles().map(r => r.toLowerCase())
+  return expected.some(e => roles.includes(e.toLowerCase()))
+}

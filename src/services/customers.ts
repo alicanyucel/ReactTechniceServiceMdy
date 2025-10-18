@@ -1,37 +1,98 @@
-// API_BASE intentionally not used here because absolute URL is required for this endpoint
+import { API_BASE } from './auth'
 import { CreateCustomerPayload, Customer } from '../types/customer'
 import { getAuthToken } from './auth'
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
-  // Use absolute URL to ensure it works regardless of dev proxy settings
-  const url = `https://teknikservisapi.mudbey.com.tr:7054/api/Customers/CreateCustomer`
+  // Prefer configured base; fallback to dev proxy '/api'
+  const url = API_BASE ? `${API_BASE}/api/Customers/CreateCustomer` : '/api/Customers/CreateCustomer'
   const token = getAuthToken()
-  const res = await fetch(url, {
+  // eslint-disable-next-line no-console
+  console.debug('[createCustomer] POST', url, payload)
+  let res: Response
+  try {
+    res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(payload),
-  })
+    })
+  } catch (networkErr: any) {
+    const err: any = new Error('Ağ bağlantı hatası. İnternet bağlantınızı ve sunucu durumunu kontrol edin.')
+    err.status = 0
+    err.cause = networkErr
+    throw err
+  }
   const text = await res.text().catch(() => '')
   if (!res.ok) {
-    // Try parse error envelope
+    // Try parse error envelope/ProblemDetails/ModelState
     let userMsg = ''
+    let details: string[] = []
+    let code: string | undefined
     try {
       const j = text ? JSON.parse(text) : null
       if (j) {
+        // Custom envelope
         if (Array.isArray(j.errorMessages) && j.errorMessages.length > 0) {
-          userMsg = String(j.errorMessages[0])
+          details = j.errorMessages.map((x: any) => String(x))
+          userMsg = details[0]
         } else if (typeof j.message === 'string' && j.message.trim()) {
           userMsg = j.message
         }
+        // ASP.NET Core ProblemDetails
+        if (typeof j.title === 'string' && j.title.trim()) {
+          userMsg = userMsg || j.title
+        }
+        if (typeof j.detail === 'string' && j.detail.trim()) {
+          details.push(j.detail)
+        }
+        if (j.errors && typeof j.errors === 'object') {
+          for (const [k, v] of Object.entries(j.errors as Record<string, any>)) {
+            if (Array.isArray(v)) {
+              for (const msg of v) details.push(`${k}: ${String(msg)}`)
+            } else if (v) {
+              details.push(`${k}: ${String(v)}`)
+            }
+          }
+        }
+        if (typeof j.code === 'string') code = j.code
       }
     } catch {}
-    if (!userMsg) userMsg = `Müşteri oluşturma başarısız (HTTP ${res.status})`
+    // Parse rate-limit headers for 429
+    let retryAfterSec: number | undefined
+    const ra = res.headers.get('Retry-After')
+    if (ra) {
+      const n = parseInt(ra, 10)
+      if (!Number.isNaN(n)) retryAfterSec = n
+      else {
+        const d = new Date(ra)
+        if (!isNaN(d.getTime())) {
+          retryAfterSec = Math.max(0, Math.ceil((d.getTime() - Date.now()) / 1000))
+        }
+      }
+    }
+    if (!retryAfterSec) {
+      const alt = res.headers.get('x-ratelimit-reset') || res.headers.get('x-rate-limit-reset')
+      if (alt) {
+        const ts = parseInt(alt, 10)
+        if (!Number.isNaN(ts)) retryAfterSec = Math.max(0, Math.ceil(ts - Date.now() / 1000))
+      }
+    }
+    if (!userMsg) {
+      if (res.status === 400) userMsg = 'Geçersiz istek (400). Lütfen form alanlarını kontrol edin.'
+      else if (res.status === 429) userMsg = 'Çok fazla istek (429). Lütfen biraz sonra tekrar deneyin.'
+      else userMsg = `Müşteri oluşturma başarısız (HTTP ${res.status})`
+    }
     const err: any = new Error(userMsg)
     err.status = res.status
     err.rawBody = text
+    if (details.length) err.errors = details
+    if (code) err.code = code
+    if (retryAfterSec != null) err.retryAfterSec = retryAfterSec
+    // eslint-disable-next-line no-console
+    console.error('[createCustomer] HTTP Error', res.status, text)
     throw err
   }
   // Parse success response (may be plain object or envelope)
