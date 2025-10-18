@@ -12,7 +12,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
   const menuItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/customers', label: 'Müşteriler', icon: '👥' },
-    { path: '/devices', label: 'Cihazlar', icon: '📱' },
+    { path: '/ürünler', label: 'Ürünler', icon: '📱' },
     { path: '/repairs', label: 'Onarımlar', icon: '🔧' },
     { path: '/inventory', label: 'Envanter', icon: '📦' },
     { path: '/reports', label: 'Raporlar', icon: '📈' },
