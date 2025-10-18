@@ -35,14 +35,74 @@ const Customers: React.FC = () => {
     load()
   }, [load])
 
-  const humanize = (k: string) => k
-    .split('.').join(' · ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^./, (s: string) => s.toUpperCase())
+  const humanize = (k: string) => {
+    // Özel durumlar önce
+    const titleMap: Record<string, string> = {
+      'createdAt': 'Oluşturma Tarihi',
+      // Yaygın yazım hataları için eşlemeler (API kaynaklı olabilir)
+      'createadAt': 'Oluşturma Tarihi',
+      'createadTime': 'Oluşturma Saati',
+      'updatedAt': 'Güncelleme Tarihi',
+      'createdDate': 'Oluşturma Tarihi',
+      'updatedDate': 'Güncelleme Tarihi',
+      'created': 'Oluşturma Tarihi',
+      'updated': 'Güncelleme Tarihi',
+      'createdTime': 'Oluşturma Saati',
+      'updatedTime': 'Güncelleme Saati',
+      'isDeleted': 'Durum',
+      'deleted': 'Durum',
+    }
+    if (titleMap[k]) return titleMap[k]
+    
+    // Türkçe camelCase dönüştürme
+    return k
+      .split('.').join(' · ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^./, (s: string) => s.toUpperCase())
+  }
+
+  const turkishTitles: Record<string, string> = {
+    'name': 'Ad',
+    'surname': 'Soyad',
+    'address.addressLine': 'Adres',
+    'address.city': 'Şehir',
+    'address.district': 'İlçe',
+    'address.neighborhood': 'Mahalle',
+    'address.zipCode': 'Posta Kodu',
+    'address.country': 'Ülke',
+    'customerType.name': 'Müşteri Türü',
+    'phoneNumber': 'Telefon',
+    'email': 'E-posta',
+    'createdAt': 'Oluşturma Tarihi',
+    'createadAt': 'Oluşturma Tarihi',
+    'updatedAt': 'Güncelleme Tarihi',
+    'id': 'ID',
+    'isDeleted': 'Durum',
+    'createdBy': 'Oluşturan',
+    'updatedBy': 'Güncelleyen',
+    'products': 'Ürünler',
+    'updatedTime': 'Güncelleme Saati',
+    'createdTime': 'Oluşturma Saati',
+    'createadTime': 'Oluşturma Saati',
+    'createdDate': 'Oluşturma Tarihi',
+    'updatedDate': 'Güncelleme Tarihi',
+  }
 
   const getByPath = (obj: any, pathArr: string[]) => pathArr.reduce((acc, key) => (acc ? acc[key] : undefined), obj)
 
   const isDateLike = (v: any) => typeof v === 'string' && v.length >= 10 && dayjs(v).isValid()
+
+  const formatTimeOnly = (val: any): string => {
+    if (val == null) return '-'
+    let s = String(val)
+    // Remove milliseconds if any
+    if (s.includes('.')) s = s.split('.')[0]
+    const parts = s.split(':')
+    const hh = (parts[0] || '00').padStart(2, '0')
+    const mm = (parts[1] || '00').padStart(2, '0')
+    const ss = (parts[2] || '00').padStart(2, '0')
+    return `${hh}:${mm}.${ss}`
+  }
 
   const renderValue = (val: any, key?: string) => {
     if (val === null || val === undefined) return '-'
@@ -50,8 +110,24 @@ const Customers: React.FC = () => {
     if (typeof val === 'number') return val
     if (Array.isArray(val)) return val.map((x, i) => <Tag key={i}>{String(x)}</Tag>)
     if (isDateLike(val) || (key && /date|time|at/i.test(key))) {
+      // String'den milliseconds kısmı kaldır
+      let displayVal = String(val)
+      if (displayVal.includes('.')) {
+        displayVal = displayVal.split('.')[0] // "10:58:04.6112642" → "10:58:04"
+      }
+
+      // "createdTime", "updatedTime" gibi pure time alanları için özel format: HH:mm.ss
+      if (key && /time/i.test(key) && !/date|at/i.test(key)) {
+        const parts = displayVal.split(':')
+        const hh = (parts[0] || '00').padStart(2, '0')
+        const mm = (parts[1] || '00').padStart(2, '0')
+        const ss = (parts[2] || '00').padStart(2, '0')
+        return `${hh}:${mm}.${ss}`
+      }
+
+      // Tarih + saat alanları
       const d = dayjs(val)
-      return d.isValid() ? d.format('YYYY-MM-DD HH:mm') : String(val)
+      return d.isValid() ? d.locale('tr').format('DD MMMM YYYY HH:mm') : String(val)
     }
     if (typeof val === 'object') return <code style={{ whiteSpace: 'pre' }}>{JSON.stringify(val)}</code>
     return String(val)
@@ -134,28 +210,8 @@ const Customers: React.FC = () => {
 
     const cols = ordered.map((key) => {
       const pathArr = key.split('.')
-      let title = humanize(key)
-      // Özel başlıklar
-      if (key === 'name') title = 'Ad'
-      if (key === 'surname') title = 'Soyad'
-      if (key === 'address.addressLine') title = 'Adres'
-      if (key === 'address.city') title = 'Şehir'
-      if (key === 'address.district') title = 'İlçe'
-      if (key === 'address.neighborhood') title = 'Mahalle'
-      if (key === 'address.zipCode') title = 'Posta Kodu'
-      if (key === 'address.country') title = 'Ülke'
-      if (key === 'customerType.name') title = 'Müşteri Türü'
-      if (key === 'phoneNumber') title = 'Telefon'
-      if (key === 'email') title = 'E-posta'
-      if (key === 'createdAt') title = 'Oluşturma Tarihi'
-      if (key === 'updatedAt') title = 'Güncelleme Tarihi'
-      if (key === 'id') title = 'ID'
-      if (key === 'isDeleted') title = 'Durum'
-      if (key === 'createdBy') title = 'Oluşturan'
-      if (key === 'updatedBy') title = 'Güncelleyen'
-      if (key === 'products') title = 'Ürünler'
-      if (key === 'updatedTime') title = 'Güncelleme Saati'
-      if (key === 'createdTime') title = 'Oluşturma Saati'
+      let title = turkishTitles[key] || humanize(key)
+      // Bu başlıklar turkishTitles map'inde tanımlı
       const baseCol: any = {
         title,
         dataIndex: pathArr,
@@ -198,8 +254,16 @@ const Customers: React.FC = () => {
       if (/isDeleted/i.test(key)) {
         baseCol.render = (val: any) => <Tag color={val ? 'volcano' : 'green'}>{val ? 'Silinmiş' : 'Aktif'}</Tag>
       }
-      if (/createdAt|updatedAt|time/i.test(key)) {
+      // Force time-only formatting for createdTime/createadTime/updatedTime (support dot or underscore path)
+      if (/(^|[._])createad?time$/i.test(key) || /(^|[._])updatedtime$/i.test(key)) {
+        baseCol.render = (val: any) => formatTimeOnly(val)
+      } else if (/createdAt|updatedAt|time/i.test(key)) {
         baseCol.render = (val: any) => renderValue(val, key)
+      }
+
+      // Final safeguard by title mapping
+      if (title === 'Oluşturma Saati' || title === 'Güncelleme Saati') {
+        baseCol.render = (val: any) => formatTimeOnly(val)
       }
 
       // Generic text filter for all columns that don't already define filters
