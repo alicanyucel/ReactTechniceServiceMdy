@@ -148,11 +148,20 @@ const Customers: React.FC = () => {
       if (key === 'updatedAt') title = 'Güncelleme Tarihi'
       if (key === 'id') title = 'ID'
       if (key === 'isDeleted') title = 'Durum'
+<<<<<<< HEAD
       if (key === 'createdBy') title = 'Oluşturan'
       if (key === 'updatedBy') title = 'Güncelleyen'
       if (key === 'products') title = 'Ürünler'
       if (key === 'updatedTime') title = 'Güncelleme Saati'
       if (key === 'createdTime') title = 'Oluşturma Saati'
+=======
+      if (key === 'createdBy') title = 'Oluş. Kişi'
+      if (key === 'updatedBy') title = 'Güncelle. Kişi'
+      if (key === 'products') title = 'Ürünler'
+      if (key === 'createadAt') title = 'Oluş. Tarihi'
+      if (key === 'createdTime') title = 'Oluş. Saat'
+      if (key === 'updatedTime') title = 'Güncelle. Saat'
+>>>>>>> 296ff70e87f38841433188df49409f33e4e31afd
       const baseCol: any = {
         title,
         dataIndex: pathArr,
