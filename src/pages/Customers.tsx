@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, DatePicker, Flex, Form, Input, Modal, Select, Space, Table, Tag, TimePicker, Switch, Tabs, message, notification } from 'antd'
 import type { ColumnsType, TableProps } from 'antd/es/table'
-import { createCustomer, fetchCustomers, deleteCustomer } from '../services/customers'
+import { createCustomer, fetchCustomers, deleteCustomer, updateCustomer } from '../services/customers'
 import { CreateCustomerPayload, Customer } from '../types/customer'
 import dayjs from 'dayjs'
 
@@ -15,6 +15,14 @@ const Customers: React.FC = () => {
   const [deleting, setDeleting] = useState(false)
   const [activeTab, setActiveTab] = useState<'form'|'json'>('form')
   const [rawJson, setRawJson] = useState<string>('')
+  // Edit modal state
+  const [editOpen, setEditOpen] = useState(false)
+  const [editActiveTab, setEditActiveTab] = useState<'form'|'json'>('form')
+  const [editRawJson, setEditRawJson] = useState<string>('')
+  const [editingId, setEditingId] = useState<string | number | null>(null)
+  const [editForm] = Form.useForm<any>()
+  // Edit mode: all fields are editable except ID
+  const [editInitialValues, setEditInitialValues] = useState<any | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -465,8 +473,148 @@ const Customers: React.FC = () => {
     }
   }
 
-  const onEdit = (_record: Customer) => {
-    message.info(`Müşteri güncelleme özelliği yakında gelecek`)
+  const onEdit = (record: Customer) => {
+    setEditingId(record.id as any)
+  // no lock; fields are editable by default
+    // Prefill form from record
+    const ct = (record as any)?.customerType
+    const customerTypeNum = typeof ct === 'number' ? ct : (ct && typeof ct.value === 'number' ? ct.value : undefined)
+    const formVals: any = {
+      id: record.id,
+      name: record.name,
+      surname: record.surname,
+      phoneNumber: (record as any).phoneNumber,
+      email: (record as any).email,
+      address: {
+        addressLine: (record as any)?.address?.addressLine || '',
+        city: (record as any)?.address?.city || '',
+        neighborhood: (record as any)?.address?.neighborhood || '',
+        district: (record as any)?.address?.district || '',
+        zipCode: (record as any)?.address?.zipCode || '',
+        country: (record as any)?.address?.country || '',
+      },
+      customerType: customerTypeNum,
+      updatedBy: (record as any).updatedBy,
+      createdBy: (record as any).createdBy,
+      // For UI we keep 'cratedTime' field name; map to createdTime at submit
+      cratedTime: (record as any).cratedTime ? dayjs((record as any).cratedTime, 'HH:mm:ss') : undefined,
+      updatedTime: (record as any).updatedTime ? dayjs((record as any).updatedTime, 'HH:mm:ss') : undefined,
+      createadAt: (record as any).createadAt ? dayjs((record as any).createadAt) : undefined,
+      updatedAt: (record as any).updatedAt ? dayjs((record as any).updatedAt) : undefined,
+      isDeleted: (record as any).isDeleted,
+    }
+  setEditInitialValues(formVals)
+    // Prefill JSON from converted payload
+    const addr = formVals.address || {}
+    const safeAddress = {
+      addressLine: addr.addressLine ?? '',
+      city: addr.city ?? '',
+      neighborhood: addr.neighborhood ?? '',
+      district: addr.district ?? '',
+      zipCode: addr.zipCode ?? '',
+      country: addr.country ?? '',
+    }
+    const payload = {
+      id: record.id,
+      name: formVals.name,
+      surname: formVals.surname,
+      phoneNumber: formVals.phoneNumber,
+      email: formVals.email,
+      address: safeAddress,
+      customerType: customerTypeNum,
+      createdTime: formVals?.cratedTime ? dayjs(formVals.cratedTime).format('HH:mm:ss') : undefined,
+      updatedTime: formVals?.updatedTime ? dayjs(formVals.updatedTime).format('HH:mm:ss') : undefined,
+      updatedBy: formVals.updatedBy,
+      createdBy: formVals.createdBy,
+      createadAt: formVals?.createadAt ? dayjs(formVals.createadAt).toISOString() : undefined,
+      updatedAt: formVals?.updatedAt ? dayjs(formVals.updatedAt).toISOString() : undefined,
+      isDeleted: typeof formVals.isDeleted === 'boolean' ? formVals.isDeleted : false,
+    }
+    setEditRawJson(JSON.stringify(payload, null, 2))
+    setEditActiveTab('form')
+    setEditOpen(true)
+  }
+
+  const onUpdateSave = async () => {
+    if (!editingId) return
+    try {
+      const isRaw = editActiveTab === 'json'
+      if (isRaw) {
+        let body: any
+        try {
+          body = JSON.parse(editRawJson || '{}')
+        } catch (err) {
+          message.error('Geçersiz JSON. Lütfen kontrol edin.')
+          return
+        }
+        if (!body.id) body.id = editingId
+        setLoading(true)
+        await updateCustomer(body)
+        message.success('Müşteri güncellendi')
+        await load()
+        setEditOpen(false)
+        editForm.resetFields()
+        setEditRawJson('')
+        return
+      }
+      const values = await editForm.validateFields()
+      const addr = values?.address || {}
+      const safeAddress = {
+        addressLine: addr.addressLine ?? '',
+        city: addr.city ?? '',
+        neighborhood: addr.neighborhood ?? '',
+        district: addr.district ?? '',
+        zipCode: addr.zipCode ?? '',
+        country: addr.country ?? '',
+      }
+      const ctRaw = (values as any)?.customerType
+      const customerTypeNum = typeof ctRaw === 'number' ? ctRaw : (ctRaw != null && ctRaw !== '' ? Number(ctRaw) : 1)
+      const payload: any = {
+        id: editingId,
+        name: values.name,
+        surname: values.surname,
+        phoneNumber: values.phoneNumber,
+        email: values.email,
+        address: safeAddress,
+        customerType: Number.isNaN(customerTypeNum) ? 1 : customerTypeNum,
+        createdTime: values?.cratedTime ? dayjs(values.cratedTime).format('HH:mm:ss') : undefined,
+        updatedTime: values?.updatedTime ? dayjs(values.updatedTime).format('HH:mm:ss') : undefined,
+        updatedBy: values.updatedBy,
+        createdBy: values.createdBy,
+        createadAt: values?.createadAt ? dayjs(values.createadAt).toISOString() : undefined,
+        updatedAt: values?.updatedAt ? dayjs(values.updatedAt).toISOString() : undefined,
+        isDeleted: typeof values.isDeleted === 'boolean' ? values.isDeleted : false,
+      }
+      setLoading(true)
+      await updateCustomer(payload)
+      message.success('Müşteri güncellendi')
+      await load()
+      setEditOpen(false)
+      editForm.resetFields()
+    } catch (e: any) {
+      if (e?.errorFields) return
+      const lines: string[] = Array.isArray(e?.errors) ? e.errors : []
+      if (lines.length) {
+        notification.error({
+          message: 'Güncelleme hatası',
+          description: (
+            <div>
+              <div style={{ marginBottom: 8 }}>{e?.message || 'Geçersiz istek (400). Lütfen alanları kontrol edin.'}</div>
+              <ul style={{ paddingLeft: 18, margin: 0 }}>
+                {lines.slice(0, 6).map((l, i) => (<li key={i}>{l}</li>))}
+                {lines.length > 6 && <li>… {lines.length - 6} daha</li>}
+              </ul>
+            </div>
+          ),
+          placement: 'topRight',
+          duration: 6,
+        })
+      } else {
+        message.error(e?.message || 'Müşteri güncellenemedi')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Kullanılmayan uyarı giderildi - actionColumn columns içinde zaten kullanılıyor
@@ -482,7 +630,7 @@ const Customers: React.FC = () => {
     columns,
     scroll: { x: 'max-content' },
     pagination: {
-      pageSize: 18,
+      pageSize: 15,
       showSizeChanger: true,
       position: ['bottomCenter'],
     },
@@ -720,6 +868,106 @@ const Customers: React.FC = () => {
               <div style={{ color: '#999', fontSize: 12, marginTop: 6 }}>
                 Bu sekmede form yok sayılır ve JSON doğrudan API'ye gönderilir.
               </div>
+            </div>
+          )}
+        ]} />
+      </Modal>
+
+      {/* Edit Customer Modal */}
+      <Modal
+        title="Müşteri Güncelle"
+        open={editOpen}
+        afterOpenChange={(vis) => {
+          if (vis && editInitialValues) {
+            ;(editForm as any).setFieldsValue(editInitialValues)
+          }
+        }}
+        onCancel={() => setEditOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setEditOpen(false)} disabled={loading}>İptal</Button>,
+          <Button key="save" type="primary" onClick={onUpdateSave} loading={loading}>Kaydet</Button>,
+        ]}
+        destroyOnClose
+      >
+        <Tabs activeKey={editActiveTab} onChange={(k) => setEditActiveTab(k as 'form'|'json')} items={[
+          { key: 'form', label: 'Form', children: (
+            <Form form={editForm} layout="vertical" preserve={false}>
+              <Form.Item name="id" label="ID">
+                <Input disabled />
+              </Form.Item>
+              <Flex gap={12}>
+                <Form.Item name="name" label="Ad" style={{ flex: 1 }} rules={[{ required: true, message: 'Ad zorunludur' }, { min: 2, message: 'Ad en az 2 karakter olmalı' }]}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name="surname" label="Soyad" style={{ flex: 1 }} rules={[{ required: true, message: 'Soyad zorunludur' }, { min: 2, message: 'Soyad en az 2 karakter olmalı' }]}>
+                  <Input />
+                </Form.Item>
+              </Flex>
+              <Flex gap={12}>
+                <Form.Item name="phoneNumber" label="Telefon" style={{ flex: 1 }} rules={[{ required: true, message: 'Telefon zorunludur' }, { pattern: /^(\+90\s?)?0?5\d{2}\s?\d{3}\s?\d{2}\s?\d{2}$/, message: 'Geçerli bir GSM numarası girin (örn. 05xx xxx xx xx)' }]}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name="email" label="E-posta" style={{ flex: 1 }} rules={[{ type: 'email', message: 'Geçerli e-posta girin' }]}> 
+                  <Input />
+                </Form.Item>
+              </Flex>
+              <Form.Item name={["address", "addressLine"]} label="Adres Satırı">
+                <Input />
+              </Form.Item>
+              <Flex gap={12}>
+                <Form.Item name={["address", "city"]} label="Şehir" style={{ flex: 1 }} rules={[{ required: true, message: 'Şehir zorunludur' }]}> 
+                  <Input />
+                </Form.Item>
+                <Form.Item name={["address", "district"]} label="İlçe" style={{ flex: 1 }} rules={[{ required: true, message: 'İlçe zorunludur' }]}> 
+                  <Input />
+                </Form.Item>
+              </Flex>
+              <Flex gap={12}>
+                <Form.Item name={["address", "neighborhood"]} label="Mahalle" style={{ flex: 1 }}>
+                  <Input />
+                </Form.Item>
+                <Form.Item name={["address", "zipCode"]} label="Posta Kodu" style={{ flex: 1 }}>
+                  <Input />
+                </Form.Item>
+              </Flex>
+              <Form.Item name={["address", "country"]} label="Ülke" rules={[{ required: true, message: 'Ülke zorunludur' }]}> 
+                <Input />
+              </Form.Item>
+              <Form.Item name="customerType" label="Müşteri Türü" rules={[{ required: true, message: 'Müşteri türü zorunludur' }]}> 
+                <Select options={[{label: 'Bireysel', value: 1}, {label: 'Kurumsal', value: 2}]} />
+              </Form.Item>
+              <Flex gap={12}>
+                <Form.Item name="createdBy" label="Oluşturan" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturan zorunludur' }]}> 
+                  <Input />
+                </Form.Item>
+                <Form.Item name="updatedBy" label="Güncelleyen" style={{ flex: 1 }} rules={[{ required: true, message: 'Güncelleyen zorunludur' }]}> 
+                  <Input />
+                </Form.Item>
+              </Flex>
+              <Flex gap={12}>
+                <Form.Item name="cratedTime" label="Oluşturma Saati" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma saati zorunludur' }]}> 
+                  <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
+                </Form.Item>
+                <Form.Item name="updatedTime" label="Güncelleme Saati" style={{ flex: 1 }} dependencies={["cratedTime", "createadAt", "updatedAt"]} rules={[{ required: true, message: 'Güncelleme saati zorunludur' }, ({ getFieldValue }) => ({ validator(_, value) { const start = getFieldValue('cratedTime'); if (!value || !start) return Promise.resolve(); const createdDate = getFieldValue('createadAt'); const updatedDate = getFieldValue('updatedAt'); const sameDay = createdDate && updatedDate ? dayjs(updatedDate).isSame(dayjs(createdDate), 'day') : true; if (!sameDay) return Promise.resolve(); const s = dayjs(start); const v = dayjs(value); const sSec = s.hour() * 3600 + s.minute() * 60 + s.second(); const vSec = v.hour() * 3600 + v.minute() * 60 + v.second(); if (vSec < sSec) { return Promise.reject(new Error('Güncelleme saati, aynı gün için oluşturma saatinden önce olamaz')); } return Promise.resolve(); } })]}>
+                  <TimePicker style={{ width: '100%' }} format="HH:mm:ss" />
+                </Form.Item>
+              </Flex>
+              <Flex gap={12}>
+                <Form.Item name="createadAt" label="Oluşturma Tarihi" style={{ flex: 1 }} rules={[{ required: true, message: 'Oluşturma tarihi zorunludur' }]}> 
+                  <DatePicker showTime style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item name="updatedAt" label="Güncelleme Tarihi" style={{ flex: 1 }} dependencies={["createadAt"]} rules={[{ required: true, message: 'Güncelleme tarihi zorunludur' }, ({ getFieldValue }) => ({ validator(_, value) { const start = getFieldValue('createadAt'); if (!value || !start) return Promise.resolve(); const s = dayjs(start); const v = dayjs(value); if (v.isBefore(s)) { return Promise.reject(new Error('Güncelleme tarihi, oluşturma tarihinden önce olamaz')); } return Promise.resolve(); } })]}>
+                  <DatePicker showTime style={{ width: '100%' }} />
+                </Form.Item>
+              </Flex>
+              <Form.Item name="isDeleted" label="Silindi" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </Form>
+          )},
+          { key: 'json', label: 'JSON', children: (
+            <div>
+              <Input.TextArea value={editRawJson} onChange={(e) => setEditRawJson(e.target.value)} autoSize={{ minRows: 12 }} />
             </div>
           )}
         ]} />

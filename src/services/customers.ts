@@ -1,5 +1,5 @@
 import { API_BASE } from './auth'
-import { CreateCustomerPayload, Customer } from '../types/customer'
+import { CreateCustomerPayload, UpdateCustomerPayload, Customer } from '../types/customer'
 import { getAuthToken } from './auth'
 
 export async function createCustomer(payload: CreateCustomerPayload): Promise<Customer> {
@@ -203,5 +203,70 @@ export async function deleteCustomer(id: string): Promise<void> {
     // eslint-disable-next-line no-console
     console.error('[deleteCustomer] HTTP Error', res.status, text)
     throw new Error(text || `Müşteri silme başarısız (HTTP ${res.status})`)
+  }
+}
+
+export async function updateCustomer(payload: UpdateCustomerPayload): Promise<Customer> {
+  const url = 'https://teknikservisapi.mudbey.com.tr:7054/api/Customers/UpdateCustomer'
+  const token = getAuthToken()
+  // eslint-disable-next-line no-console
+  console.debug('[updateCustomer] POST', url, payload)
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch (networkErr: any) {
+    const err: any = new Error('Ağ bağlantı hatası. İnternet bağlantınızı ve sunucu durumunu kontrol edin.')
+    err.status = 0
+    err.cause = networkErr
+    throw err
+  }
+  const text = await res.text().catch(() => '')
+  if (!res.ok) {
+    let userMsg = ''
+    let details: string[] = []
+    let code: string | undefined
+    try {
+      const j = text ? JSON.parse(text) : null
+      if (j) {
+        if (Array.isArray(j.errorMessages) && j.errorMessages.length > 0) {
+          details = j.errorMessages.map((x: any) => String(x))
+          userMsg = details[0]
+        } else if (typeof j.message === 'string' && j.message.trim()) {
+          userMsg = j.message
+        }
+        if (typeof j.title === 'string' && j.title.trim()) userMsg = userMsg || j.title
+        if (typeof j.detail === 'string' && j.detail.trim()) details.push(j.detail)
+        if (j.errors && typeof j.errors === 'object') {
+          for (const [k, v] of Object.entries(j.errors as Record<string, any>)) {
+            if (Array.isArray(v)) details.push(...(v as any[]).map((m) => `${k}: ${String(m)}`))
+            else if (v) details.push(`${k}: ${String(v)}`)
+          }
+        }
+        if (typeof j.code === 'string') code = j.code
+      }
+    } catch {}
+    const err: any = new Error(userMsg || `Müşteri güncelleme başarısız (HTTP ${res.status})`)
+    err.status = res.status
+    err.rawBody = text
+    if (details.length) err.errors = details
+    if (code) err.code = code
+    // eslint-disable-next-line no-console
+    console.error('[updateCustomer] HTTP Error', res.status, text)
+    throw err
+  }
+  try {
+    const j = text ? JSON.parse(text) : {}
+    if (j && typeof j === 'object' && 'data' in j) return (j as any).data as Customer
+    return j as Customer
+  } catch {
+    return {} as Customer
   }
 }

@@ -35,3 +35,21 @@ export type CreateCustomerPayload = {
   updatedAt?: string
   isDeleted?: boolean
 }
+
+export type UpdateCustomerPayload = {
+  id: string | number
+  name?: string
+  surname?: string
+  phoneNumber?: string
+  email?: string
+  address?: Address
+  customerType?: number
+  // Update payload uses createdTime (not cratedTime) per backend sample
+  createdTime?: string
+  updatedTime?: string
+  updatedBy?: string
+  createdBy?: string
+  createadAt?: string
+  updatedAt?: string
+  isDeleted?: boolean
+}
