@@ -1,11 +1,26 @@
 import React from 'react'
 import './Header.css'
+import { Button, Space, message } from 'antd'
+import { LogoutOutlined, UserAddOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { logout } from '../../services/auth'
 
 interface HeaderProps {
   onToggleSidebar: () => void
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    message.success('Çıkış yapıldı')
+    navigate('/login', { replace: true })
+  }
+
+  const goRegister = () => {
+    navigate('/register')
+  }
   return (
     <header className="main-header">
       <div className="navbar">
@@ -21,6 +36,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </div>
         
         <div className="navbar-nav">
+          <Space size={8} style={{ marginRight: 12 }}>
+            <Button size="middle" icon={<UserAddOutlined />} type="primary" onClick={goRegister}>
+              Kayıt
+            </Button>
+            <Button size="middle" icon={<LogoutOutlined />} danger onClick={handleLogout}>
+              Çıkış
+            </Button>
+          </Space>
           <div className="nav-item dropdown">
             <button className="nav-link dropdown-toggle">
               <span className="user-icon">👤</span>

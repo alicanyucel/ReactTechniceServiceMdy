@@ -14,7 +14,7 @@ Yerelde çalıştırmak için:
 
 ```cmd
 npm install
-npm run dev
+npm start
 ```
 
 Build almak için:
@@ -23,6 +23,8 @@ Build almak için:
 npm run build
 npm run preview
 ```
+
+
 
 ## Docker ile Çalıştırma
 ### 1) Docker image oluşturup Nginx ile servis etme
