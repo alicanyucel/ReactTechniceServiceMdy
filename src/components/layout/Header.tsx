@@ -42,7 +42,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               icon={<UserAddOutlined />} 
               type="primary" 
               onClick={goRegister}
-              style={{ height: '32px', alignItems: 'center', display: 'flex' }}
             >
               Kayıt
             </Button>
@@ -51,7 +50,6 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               icon={<LogoutOutlined />} 
               danger 
               onClick={handleLogout}
-              style={{ height: '32px', alignItems: 'center', display: 'flex' }}
             >
               Çıkış
             </Button>

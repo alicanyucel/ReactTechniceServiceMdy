@@ -66,7 +66,34 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `Giriş başarısız (HTTP ${res.status})`)
+    let userMsg = ''
+    let errorJson: any = null
+    try {
+      errorJson = text ? JSON.parse(text) : null
+      if (errorJson) {
+        if (Array.isArray(errorJson.errorMessages) && errorJson.errorMessages.length > 0) {
+          userMsg = String(errorJson.errorMessages[0])
+        } else if (typeof errorJson.message === 'string' && errorJson.message.trim()) {
+          userMsg = errorJson.message
+        }
+      }
+    } catch {
+      // not JSON, ignore
+    }
+
+    // Fallback friendly messages by status
+    if (!userMsg) {
+      if (res.status === 401) userMsg = 'Kullanıcı adı veya şifre hatalı.'
+      else if (res.status === 403) userMsg = 'Bu işlem için yetkiniz bulunmuyor.'
+      else if (res.status >= 500) userMsg = 'Sunucu kaynaklı bir hata oluştu.'
+      else userMsg = 'Giriş işlemi tamamlanamadı.'
+    }
+
+    const error: any = new Error(userMsg)
+    error.status = res.status
+    error.rawBody = text
+    if (errorJson) error.errorJson = errorJson
+    throw error
   }
   // Try headers first
   let token = extractTokenFromHeaders(res)

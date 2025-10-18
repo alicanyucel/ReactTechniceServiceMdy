@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
-import { Button, Card, Flex, Form, Input, Typography, message } from 'antd'
+import { Button, Card, Flex, Form, Input, Typography, notification } from 'antd'
 import { login } from '../services/auth'
 import { useNavigate } from 'react-router-dom'
 
@@ -23,13 +23,58 @@ const Login: React.FC = () => {
       await login(values)
       const token = localStorage.getItem('authToken')
       if (token) {
-        message.success('Giriş başarılı')
+        notification.success({
+          message: 'Giriş başarılı',
+          description: 'Hoş geldiniz.',
+          placement: 'topRight',
+        })
         navigate('/', { replace: true })
       } else {
-        message.error('Giriş başarılı görünüyor ancak oturum anahtarı alınamadı')
+        notification.warning({
+          message: 'Oturum anahtarı alınamadı',
+          description: 'Giriş başarılı görünüyor ancak oturum anahtarı bulunamadı. Lütfen tekrar deneyin.',
+          placement: 'topRight',
+        })
       }
     } catch (err: any) {
-      message.error(err?.message || 'Giriş başarısız')
+      const rawMsg = String(err?.message || '')
+      let title = 'Giriş başarısız'
+      let desc = 'Lütfen bilgilerinizi kontrol edip tekrar deneyin.'
+
+      const msg = rawMsg.toLowerCase()
+      if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('fetch')) {
+        title = 'Ağ bağlantı hatası'
+        desc = 'Sunucuya bağlanılamıyor. İnternet bağlantınızı ve sunucu durumunu kontrol edin.'
+      } else if (msg.includes('401')) {
+        title = 'Geçersiz bilgiler'
+        desc = 'Kullanıcı adı veya şifre hatalı. Lütfen tekrar deneyin.'
+      } else if (msg.includes('403')) {
+        title = 'Erişim reddedildi'
+        desc = 'Bu işlem için yetkiniz bulunmuyor.'
+      } else if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('504')) {
+        title = 'Sunucu hatası'
+        desc = 'Şu anda bir sorun var. Bir süre sonra tekrar deneyin.'
+      } else {
+        // Specific friendly mapping for lockout scenarios and generic backend texts
+        const lockoutPatterns = [
+          '3 defa',
+          'bloke',
+          'kullanıcı',
+        ]
+        if (lockoutPatterns.every(p => msg.includes(p))) {
+          title = 'Hesap geçici olarak kilitlendi'
+          desc = 'Şifrenizi 3 kez hatalı girdiğiniz için hesap 2 dakika kilitlendi. Lütfen birkaç dakika sonra tekrar deneyin.'
+        } else if (rawMsg && rawMsg.trim().length > 0 && rawMsg.trim().length < 200) {
+          // Keep backend text but still framed as friendly
+          desc = rawMsg
+        }
+      }
+
+      notification.error({
+        message: title,
+        description: desc,
+        placement: 'topRight',
+      })
     } finally {
       setLoading(false)
     }
