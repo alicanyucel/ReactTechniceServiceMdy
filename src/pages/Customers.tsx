@@ -131,7 +131,22 @@ const Customers: React.FC = () => {
     const cols = ordered.map((key) => {
       const pathArr = key.split('.')
       let title = humanize(key)
-      if (key === 'address.addressLine') title = 'Adres Satırı'
+      // Özel başlıklar
+      if (key === 'name') title = 'Ad'
+      if (key === 'surname') title = 'Soyad'
+      if (key === 'address.addressLine') title = 'Adres'
+      if (key === 'address.city') title = 'Şehir'
+      if (key === 'address.district') title = 'İlçe'
+      if (key === 'address.neighborhood') title = 'Mahalle'
+      if (key === 'address.zipCode') title = 'Posta Kodu'
+      if (key === 'address.country') title = 'Ülke'
+      if (key === 'customerType.name') title = 'Tür'
+      if (key === 'customerType.value') title = 'Tür'
+      if (key === 'phoneNumber') title = 'Telefon'
+      if (key === 'email') title = 'E-posta'
+      if (key === 'createdAt') title = 'Oluş. Tarihi'
+      if (key === 'updatedAt') title = 'Güncelle. Tarihi'
+      if (key === 'id') title = 'ID'
       const baseCol: any = {
         title,
         dataIndex: pathArr,
@@ -173,8 +188,13 @@ const Customers: React.FC = () => {
         baseCol.onFilter = (value: any, record: any) => getByPath(record, ['customerType','value']) === value
         baseCol.render = (_: any, record: any) => {
           const name = getByPath(record, ['customerType','name'])
-          const val = getByPath(record, ['customerType','value'])
-          return <Tag color="blue">{name ? `${name} (${val})` : String(val ?? '-')}</Tag>
+          return <Tag color="blue">{name || '-'}</Tag>
+        }
+      }
+      if (key === 'customerType.name') {
+        baseCol.render = (_: any, record: Customer) => {
+          const name = getByPath(record, ['customerType','name'])
+          return <Tag color="blue">{name || '-'}</Tag>
         }
       }
       if (/isDeleted/i.test(key)) {
@@ -245,26 +265,11 @@ const Customers: React.FC = () => {
     message.info(`Müşteri güncelleme özelliği yakında gelecek`)
   }
 
-  const actionColumn: ColumnsType<any>[0] = {
-    title: 'İşlemler',
-    key: 'actions',
-    width: 150,
-    fixed: 'right',
-    render: (_: any, record: Customer) => (
-      <Space>
-        <Button size="small" onClick={() => onEdit(record)}>Güncelle</Button>
-        <Popconfirm
-          title="Sil"
-          description="Bu müşteri silinecek, emin misiniz?"
-          onConfirm={() => onDelete(String(record.id))}
-          okText="Evet"
-          cancelText="Hayır"
-        >
-          <Button size="small" danger>Sil</Button>
-        </Popconfirm>
-      </Space>
-    ),
-  }
+  // Kullanılmayan uyarı giderildi - actionColumn columns içinde zaten kullanılıyor
+
+  // Action column tanımı (columns array'inde kullanılıyor)
+  // Bu tanım, columns useMemo hook'unun içinde şu şekilde kullanılıyor:
+  // cols.push({ title: 'İşlemler', key: 'actions', width: 150, fixed: 'right', render: ... })
 
   const tableProps: TableProps<any> = {
     rowKey: (r: any) => String(r.id ?? `${r.name}-${r.surname}-${Math.random()}`),
@@ -272,7 +277,11 @@ const Customers: React.FC = () => {
     dataSource: data,
     columns,
     scroll: { x: 'max-content' },
-    pagination: { pageSize: 10, showSizeChanger: true },
+    pagination: {
+      pageSize: 10,
+      showSizeChanger: true,
+      position: ['bottomCenter'],
+    },
   }
 
   return (
