@@ -36,11 +36,23 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </div>
         
         <div className="navbar-nav">
-          <Space size={8} style={{ marginRight: 12 }}>
-            <Button size="middle" icon={<UserAddOutlined />} type="primary" onClick={goRegister}>
+          <Space size={12} align="center" style={{ height: '100%' }}>
+            <Button 
+              size="middle" 
+              icon={<UserAddOutlined />} 
+              type="primary" 
+              onClick={goRegister}
+              style={{ height: '32px', alignItems: 'center', display: 'flex' }}
+            >
               Kayıt
             </Button>
-            <Button size="middle" icon={<LogoutOutlined />} danger onClick={handleLogout}>
+            <Button 
+              size="middle" 
+              icon={<LogoutOutlined />} 
+              danger 
+              onClick={handleLogout}
+              style={{ height: '32px', alignItems: 'center', display: 'flex' }}
+            >
               Çıkış
             </Button>
           </Space>

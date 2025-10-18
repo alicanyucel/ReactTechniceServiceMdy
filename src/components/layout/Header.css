@@ -28,8 +28,20 @@
 .navbar-nav { 
   display: flex; 
   align-items: center; 
-  gap: 12px; 
+  gap: 16px; 
+  height: 100%;
 }
+
+.navbar-nav .ant-space {
+  align-items: center;
+  height: 100%;
+}
+
+.navbar-nav .ant-space .ant-space-item {
+  display: flex;
+  align-items: center;
+}
+
 .nav-item .nav-link { 
   color: #fff; 
   background: transparent; 
@@ -38,10 +50,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 56px;
 }
 
 .nav-item.dropdown {
   position: relative;
+  height: 56px;
+  display: flex;
+  align-items: center;
 }
 
 .nav-link.dropdown-toggle {
@@ -51,6 +67,8 @@
   padding: 8px 12px;
   border-radius: 4px;
   transition: background-color 0.2s;
+  height: 40px;
+  min-height: 40px;
 }
 
 .nav-link.dropdown-toggle:hover {
