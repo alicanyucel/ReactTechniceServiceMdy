@@ -64,6 +64,15 @@ const Login: React.FC = () => {
               Giriş Yap
             </Button>
           </Form.Item>
+
+          <Form.Item style={{ textAlign: 'center', marginBottom: 0 }}>
+            <Text type="secondary">
+              Henüz hesabınız yok mu?{' '}
+              <Button type="link" onClick={() => navigate('/register')} style={{ padding: 0 }}>
+                Kayıt Ol
+              </Button>
+            </Text>
+          </Form.Item>
         </Form>
       </Card>
     </Flex>

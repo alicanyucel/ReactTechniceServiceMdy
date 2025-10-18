@@ -2,10 +2,66 @@
   background: #343a40;
   color: #fff;
 }
-.navbar { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-.navbar-brand { display: flex; align-items: center; gap: 12px; }
-.sidebar-toggle { background: transparent; border: none; color: #fff; cursor: pointer; font-size: 18px; }
-.brand-text { font-weight: 600; }
+.navbar { 
+  height: 56px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding: 0 16px; 
+}
+.navbar-brand { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+}
+.sidebar-toggle { 
+  background: transparent; 
+  border: none; 
+  color: #fff; 
+  cursor: pointer; 
+  font-size: 18px; 
+}
+.brand-text { 
+  font-weight: 600; 
+}
 
-.navbar-nav { display: flex; align-items: center; gap: 12px; }
-.nav-item .nav-link { color: #fff; background: transparent; border: none; cursor: pointer; }
+.navbar-nav { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+}
+.nav-item .nav-link { 
+  color: #fff; 
+  background: transparent; 
+  border: none; 
+  cursor: pointer; 
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-item.dropdown {
+  position: relative;
+}
+
+.nav-link.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.nav-link.dropdown-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-icon {
+  font-size: 16px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+}

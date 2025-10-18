@@ -1,14 +1,124 @@
-import React from 'react'
-import { Card, Flex, Typography } from 'antd'
+import React, { useState } from 'react'
+import { LockOutlined, UserOutlined, MailOutlined } from '@ant-design/icons'
+import { Button, Card, Flex, Form, Input, Typography, message } from 'antd'
+import { useNavigate } from 'react-router-dom'
+import { register } from '../services/auth'
 
 const { Title, Text } = Typography
 
 const Register: React.FC = () => {
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+
+  const onFinish = async (values: { 
+    firstName: string
+    lastName: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => {
+    if (values.password !== values.confirmPassword) {
+      message.error('Şifreler eşleşmiyor')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const currentDate = new Date().toISOString()
+      await register({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        roles: ["User"], // Varsayılan rol
+        updatedTime: currentDate,
+        updatedBy: "System",
+        createdBy: "System", 
+        cratedTime: currentDate,
+        createadAt: currentDate,
+        updatedAt: currentDate,
+        isDeleted: false
+      })
+      message.success('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...')
+      setTimeout(() => {
+        navigate('/login')
+      }, 1500)
+    } catch (err: any) {
+      message.error(err?.message || 'Kayıt başarısız')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <Flex align="center" justify="center" style={{ minHeight: '60vh' }}>
-      <Card style={{ width: 480 }}>
-        <Title level={3} style={{ marginBottom: 8 }}>Kayıt</Title>
-        <Text type="secondary">Bu sayfa örnek amaçlıdır. Kayıt formu burada yer alacaktır.</Text>
+    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#f5f5f5', padding: 16 }}>
+      <Card style={{ width: 420 }}>
+        <Flex vertical align="center" style={{ marginBottom: 24 }}>
+          <Title level={3} style={{ margin: 0 }}>Teknik Servis</Title>
+          <Text type="secondary">Yeni hesap oluşturun</Text>
+        </Flex>
+        <Form name="register" layout="vertical" onFinish={onFinish} autoComplete="off">
+          <Form.Item
+            label="Ad"
+            name="firstName"
+            rules={[{ required: true, message: 'Lütfen adınızı girin' }]}
+          >
+            <Input prefix={<UserOutlined />} placeholder="Adınız" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Soyad"
+            name="lastName"
+            rules={[{ required: true, message: 'Lütfen soyadınızı girin' }]}
+          >
+            <Input prefix={<UserOutlined />} placeholder="Soyadınız" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="E-posta"
+            name="email"
+            rules={[
+              { required: true, message: 'Lütfen e-posta adresinizi girin' },
+              { type: 'email', message: 'Geçerli bir e-posta adresi girin' }
+            ]}
+          >
+            <Input prefix={<MailOutlined />} placeholder="ornek@firma.com" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Şifre"
+            name="password"
+            rules={[
+              { required: true, message: 'Lütfen şifrenizi girin' },
+              { min: 6, message: 'Şifre en az 6 karakter olmalıdır' }
+            ]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="••••••••" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            label="Şifre Tekrar"
+            name="confirmPassword"
+            rules={[{ required: true, message: 'Lütfen şifrenizi tekrar girin' }]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="••••••••" size="large" />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+              Kayıt Ol
+            </Button>
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: 'center', marginBottom: 0 }}>
+            <Text type="secondary">
+              Zaten hesabınız var mı?{' '}
+              <Button type="link" onClick={() => navigate('/login')} style={{ padding: 0 }}>
+                Giriş Yap
+              </Button>
+            </Text>
+          </Form.Item>
+        </Form>
       </Card>
     </Flex>
   )

@@ -10,7 +10,23 @@ export type LoginPayload = {
   password: string
 }
 
+export type RegisterPayload = {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  roles: string[]
+  updatedTime?: string
+  updatedBy?: string
+  createdBy?: string
+  cratedTime?: string
+  createadAt?: string
+  updatedAt?: string
+  isDeleted?: boolean
+}
+
 export type LoginResponse = Record<string, unknown>
+export type RegisterResponse = Record<string, unknown>
 
 export const TOKEN_KEY = 'authToken'
 
@@ -39,7 +55,7 @@ function deepFindToken(obj: unknown): string | null {
 }
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const url = `${API_BASE}/api/Auth/Login`
+  const url = `https://teknikservisapi.mudbey.com.tr:7054/api/Auth/Login`
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -72,6 +88,32 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   if (token) {
     localStorage.setItem(TOKEN_KEY, token)
   }
+  return data
+}
+
+export async function register(payload: RegisterPayload): Promise<RegisterResponse> {
+  const url = `https://teknikservisapi.mudbey.com.tr:7054/api/Users/CreateUser`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `Kayıt başarısız (HTTP ${res.status})`)
+  }
+
+  let data: RegisterResponse
+  const rawText = await res.clone().text().catch(() => '')
+  try {
+    data = rawText ? JSON.parse(rawText) : {}
+  } catch {
+    data = {}
+  }
+
   return data
 }
 
